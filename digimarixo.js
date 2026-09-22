@@ -1,4 +1,3 @@
-
 const STORE_NAME = "دیجی‌ماریکسو";
 const STORE_EN = "DigiMarixo";
 
@@ -9,23 +8,14 @@ export default {
     const method = request.method;
 
     try {
-      // =========================
-      // HOME
-      // =========================
       if (path === "/" && method === "GET") {
         return html(homePage());
       }
 
-      // =========================
-      // ADMIN
-      // =========================
       if (path === "/admin" && method === "GET") {
         return html(adminPage());
       }
 
-      // =========================
-      // HEALTH
-      // =========================
       if (path === "/api/health" && method === "GET") {
         return json({
           ok: true,
@@ -36,9 +26,6 @@ export default {
         });
       }
 
-      // =========================
-      // CATEGORIES
-      // =========================
       if (path === "/api/categories" && method === "GET") {
         const result = await env.DB
           .prepare(`
@@ -51,14 +38,15 @@ export default {
         return json(result.results || []);
       }
 
-      // =========================
-      // PRODUCTS LIST
-      // =========================
       if (path === "/api/products" && method === "GET") {
         const q = url.searchParams.get("q") || "";
         const category = url.searchParams.get("category") || "";
+
         const limit = Math.min(
-          Math.max(parseInt(url.searchParams.get("limit") || "40", 10), 1),
+          Math.max(
+            parseInt(url.searchParams.get("limit") || "40", 10),
+            1
+          ),
           100
         );
 
@@ -102,15 +90,16 @@ export default {
         sql += ` ORDER BY p.created_at DESC LIMIT ? `;
         params.push(limit);
 
-        const result = await env.DB.prepare(sql).bind(...params).all();
+        const result = await env.DB
+          .prepare(sql)
+          .bind(...params)
+          .all();
 
         return json(result.results || []);
       }
 
-      // =========================
-      // SINGLE PRODUCT
-      // =========================
-      const productMatch = path.match(/^\/api\/products\/(\d+)$/);
+      const productMatch =
+        path.match(/^\/api\/products\/(\d+)$/);
 
       if (productMatch && method === "GET") {
         const id = Number(productMatch[1]);
@@ -121,14 +110,18 @@ export default {
               p.*,
               c.name AS category_name
             FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN categories c
+              ON c.id = p.category_id
             WHERE p.id = ?
           `)
           .bind(id)
           .first();
 
         if (!product) {
-          return json({ error: "محصول پیدا نشد" }, 404);
+          return json(
+            { error: "محصول پیدا نشد" },
+            404
+          );
         }
 
         const reviews = await env.DB
@@ -152,35 +145,55 @@ export default {
         });
       }
 
-      // =========================
-      // ADMIN CREATE PRODUCT
-      // =========================
       if (path === "/api/products" && method === "POST") {
         const auth = await adminAuth(request, env);
 
         if (!auth.ok) {
-          return json({ error: auth.error }, 401);
+          return json(
+            { error: auth.error },
+            401
+          );
         }
 
         const body = await request.json();
 
-        const name = String(body.name || "").trim();
-        const description = String(body.description || "").trim();
-        const price = Number(body.price || 0);
-        const comparePrice = Number(body.compare_price || 0);
-        const imageUrl = String(body.image_url || "").trim();
-        const stock = Number(body.stock || 0);
-        const categoryId = Number(body.category_id || 0);
+        const name =
+          String(body.name || "").trim();
+
+        const description =
+          String(body.description || "").trim();
+
+        const price =
+          Number(body.price || 0);
+
+        const comparePrice =
+          Number(body.compare_price || 0);
+
+        const imageUrl =
+          String(body.image_url || "").trim();
+
+        const stock =
+          Number(body.stock || 0);
+
+        const categoryId =
+          Number(body.category_id || 0);
 
         if (!name) {
-          return json({ error: "نام محصول الزامی است" }, 400);
+          return json(
+            { error: "نام محصول الزامی است" },
+            400
+          );
         }
 
         if (!Number.isFinite(price) || price < 0) {
-          return json({ error: "قیمت محصول نامعتبر است" }, 400);
+          return json(
+            { error: "قیمت محصول نامعتبر است" },
+            400
+          );
         }
 
-        const slug = slugify(name) + "-" + Date.now();
+        const slug =
+          slugify(name) + "-" + Date.now();
 
         const result = await env.DB
           .prepare(`
@@ -211,20 +224,23 @@ export default {
           )
           .run();
 
-        return json({
-          ok: true,
-          id: result.meta.last_row_id
-        }, 201);
+        return json(
+          {
+            ok: true,
+            id: result.meta.last_row_id
+          },
+          201
+        );
       }
 
-      // =========================
-      // ADMIN UPDATE PRODUCT
-      // =========================
       if (productMatch && method === "PUT") {
         const auth = await adminAuth(request, env);
 
         if (!auth.ok) {
-          return json({ error: auth.error }, 401);
+          return json(
+            { error: auth.error },
+            401
+          );
         }
 
         const id = Number(productMatch[1]);
@@ -260,14 +276,14 @@ export default {
         return json({ ok: true });
       }
 
-      // =========================
-      // ADMIN DELETE PRODUCT
-      // =========================
       if (productMatch && method === "DELETE") {
         const auth = await adminAuth(request, env);
 
         if (!auth.ok) {
-          return json({ error: auth.error }, 401);
+          return json(
+            { error: auth.error },
+            401
+          );
         }
 
         const id = Number(productMatch[1]);
@@ -284,62 +300,92 @@ export default {
         return json({ ok: true });
       }
 
-      // =========================
-      // ORDERS CREATE
-      // =========================
       if (path === "/api/orders" && method === "POST") {
         const body = await request.json();
 
-        const customerName = String(body.customer_name || "").trim();
-        const phone = String(body.phone || "").trim();
-        const address = String(body.address || "").trim();
-        const items = Array.isArray(body.items) ? body.items : [];
+        const customerName =
+          String(body.customer_name || "").trim();
+
+        const phone =
+          String(body.phone || "").trim();
+
+        const address =
+          String(body.address || "").trim();
+
+        const items =
+          Array.isArray(body.items)
+            ? body.items
+            : [];
 
         if (!customerName || !phone || !address) {
-          return json({
-            error: "نام، شماره تماس و آدرس الزامی است"
-          }, 400);
+          return json(
+            {
+              error:
+                "نام، شماره تماس و آدرس الزامی است"
+            },
+            400
+          );
         }
 
         if (!items.length) {
-          return json({
-            error: "سبد خرید خالی است"
-          }, 400);
+          return json(
+            {
+              error: "سبد خرید خالی است"
+            },
+            400
+          );
         }
 
         let total = 0;
         const preparedItems = [];
 
         for (const item of items) {
-          const productId = Number(item.product_id);
-          const quantity = Math.max(
-            1,
-            Number(item.quantity || 1)
-          );
+          const productId =
+            Number(item.product_id);
 
-          const product = await env.DB
-            .prepare(`
-              SELECT id, name, price, stock
-              FROM products
-              WHERE id = ?
-              AND active = 1
-            `)
-            .bind(productId)
-            .first();
+          const quantity =
+            Math.max(
+              1,
+              Number(item.quantity || 1)
+            );
+
+          const product =
+            await env.DB
+              .prepare(`
+                SELECT
+                  id,
+                  name,
+                  price,
+                  stock
+                FROM products
+                WHERE id = ?
+                AND active = 1
+              `)
+              .bind(productId)
+              .first();
 
           if (!product) {
-            return json({
-              error: "یکی از محصولات دیگر موجود نیست"
-            }, 400);
+            return json(
+              {
+                error:
+                  "یکی از محصولات دیگر موجود نیست"
+              },
+              400
+            );
           }
 
           if (product.stock < quantity) {
-            return json({
-              error: `موجودی محصول «${product.name}» کافی نیست`
-            }, 400);
+            return json(
+              {
+                error:
+                  `موجودی محصول «${product.name}» کافی نیست`
+              },
+              400
+            );
           }
 
-          const lineTotal = product.price * quantity;
+          const lineTotal =
+            product.price * quantity;
 
           total += lineTotal;
 
@@ -350,29 +396,32 @@ export default {
           });
         }
 
-        const orderResult = await env.DB
-          .prepare(`
-            INSERT INTO orders
-            (
-              customer_name,
+        const orderResult =
+          await env.DB
+            .prepare(`
+              INSERT INTO orders
+              (
+                customer_name,
+                phone,
+                address,
+                total_amount,
+                status,
+                payment_status,
+                created_at
+              )
+              VALUES
+              (?, ?, ?, ?, 'pending', 'unpaid', datetime('now'))
+            `)
+            .bind(
+              customerName,
               phone,
               address,
-              total_amount,
-              status,
-              payment_status,
-              created_at
+              total
             )
-            VALUES (?, ?, ?, ?, 'pending', 'unpaid', datetime('now'))
-          `)
-          .bind(
-            customerName,
-            phone,
-            address,
-            total
-          )
-          .run();
+            .run();
 
-        const orderId = orderResult.meta.last_row_id;
+        const orderId =
+          orderResult.meta.last_row_id;
 
         for (const item of preparedItems) {
           await env.DB
@@ -411,51 +460,64 @@ export default {
             .run();
         }
 
-        return json({
-          ok: true,
-          order_id: orderId,
-          total_amount: total,
-          payment_status: "unpaid",
-          message: "سفارش با موفقیت ثبت شد"
-        }, 201);
+        return json(
+          {
+            ok: true,
+            order_id: orderId,
+            total_amount: total,
+            payment_status: "unpaid",
+            message:
+              "سفارش با موفقیت ثبت شد"
+          },
+          201
+        );
       }
 
-      // =========================
-      // GET ORDERS
-      // =========================
       if (path === "/api/orders" && method === "GET") {
-        const auth = await adminAuth(request, env);
+        const auth =
+          await adminAuth(request, env);
 
         if (!auth.ok) {
-          return json({ error: auth.error }, 401);
+          return json(
+            { error: auth.error },
+            401
+          );
         }
 
-        const result = await env.DB
-          .prepare(`
-            SELECT *
-            FROM orders
-            ORDER BY created_at DESC
-            LIMIT 200
-          `)
-          .all();
+        const result =
+          await env.DB
+            .prepare(`
+              SELECT *
+              FROM orders
+              ORDER BY created_at DESC
+              LIMIT 200
+            `)
+            .all();
 
-        return json(result.results || []);
+        return json(
+          result.results || []
+        );
       }
 
-      // =========================
-      // UPDATE ORDER STATUS
-      // =========================
-      const orderMatch = path.match(/^\/api\/orders\/(\d+)$/);
+      const orderMatch =
+        path.match(/^\/api\/orders\/(\d+)$/);
 
       if (orderMatch && method === "PUT") {
-        const auth = await adminAuth(request, env);
+        const auth =
+          await adminAuth(request, env);
 
         if (!auth.ok) {
-          return json({ error: auth.error }, 401);
+          return json(
+            { error: auth.error },
+            401
+          );
         }
 
-        const id = Number(orderMatch[1]);
-        const body = await request.json();
+        const id =
+          Number(orderMatch[1]);
+
+        const body =
+          await request.json();
 
         const allowed = [
           "pending",
@@ -466,12 +528,17 @@ export default {
           "cancelled"
         ];
 
-        const status = String(body.status || "");
+        const status =
+          String(body.status || "");
 
         if (!allowed.includes(status)) {
-          return json({
-            error: "وضعیت سفارش نامعتبر است"
-          }, 400);
+          return json(
+            {
+              error:
+                "وضعیت سفارش نامعتبر است"
+            },
+            400
+          );
         }
 
         await env.DB
@@ -486,24 +553,43 @@ export default {
         return json({ ok: true });
       }
 
-      // =========================
-      // REVIEWS
-      // =========================
-      if (path === "/api/reviews" && method === "POST") {
-        const body = await request.json();
+      if (
+        path === "/api/reviews" &&
+        method === "POST"
+      ) {
+        const body =
+          await request.json();
 
-        const productId = Number(body.product_id);
-        const name = String(body.name || "کاربر").trim();
-        const rating = Math.min(
-          5,
-          Math.max(1, Number(body.rating || 5))
-        );
-        const comment = String(body.comment || "").trim();
+        const productId =
+          Number(body.product_id);
+
+        const name =
+          String(
+            body.name || "کاربر"
+          ).trim();
+
+        const rating =
+          Math.min(
+            5,
+            Math.max(
+              1,
+              Number(body.rating || 5)
+            )
+          );
+
+        const comment =
+          String(
+            body.comment || ""
+          ).trim();
 
         if (!productId || !comment) {
-          return json({
-            error: "محصول و متن نظر الزامی است"
-          }, 400);
+          return json(
+            {
+              error:
+                "محصول و متن نظر الزامی است"
+            },
+            400
+          );
         }
 
         await env.DB
@@ -526,61 +612,73 @@ export default {
           )
           .run();
 
-        return json({
-          ok: true,
-          message: "نظر شما ثبت شد"
-        }, 201);
+        return json(
+          {
+            ok: true,
+            message:
+              "نظر شما ثبت شد"
+          },
+          201
+        );
       }
 
-      // =========================
-      // 404
-      // =========================
-      return new Response("Not Found", {
-        status: 404,
-        headers: {
-          "content-type": "text/plain; charset=UTF-8"
+      return new Response(
+        "Not Found",
+        {
+          status: 404,
+          headers: {
+            "content-type":
+              "text/plain; charset=UTF-8"
+          }
         }
-      });
+      );
 
     } catch (error) {
-      return json({
-        error: "خطای داخلی سرور",
-        details: error.message
-      }, 500);
+      return json(
+        {
+          error:
+            "خطای داخلی سرور",
+          details:
+            error.message
+        },
+        500
+      );
     }
   }
 };
 
 
-// =====================================================
-// ADMIN AUTH
-// =====================================================
-
 async function adminAuth(request, env) {
-  const configuredPassword = env.ADMIN_PASSWORD;
+  const configuredPassword =
+    env.ADMIN_PASSWORD;
 
   if (!configuredPassword) {
     return {
       ok: false,
-      error: "ADMIN_PASSWORD هنوز در Cloudflare تنظیم نشده است"
+      error:
+        "ADMIN_PASSWORD هنوز در Cloudflare تنظیم نشده است"
     };
   }
 
-  const auth = request.headers.get("Authorization") || "";
+  const auth =
+    request.headers.get("Authorization") || "";
 
   if (!auth.startsWith("Bearer ")) {
     return {
       ok: false,
-      error: "دسترسی مدیریت نیاز به ورود دارد"
+      error:
+        "دسترسی مدیریت نیاز به ورود دارد"
     };
   }
 
-  const password = auth.substring(7);
+  const password =
+    auth.substring(7);
 
   if (password !== configuredPassword) {
     return {
       ok: false,
-      error: "رمز مدیریت اشتباه است"
+      error:
+        "رمز مدیریت اشتباه است"
     };
   }
 
@@ -588,22 +686,21 @@ async function adminAuth(request, env) {
 }
 
 
-// =====================================================
-// HELPERS
-// =====================================================
-
 function json(data, status = 200) {
   return new Response(
     JSON.stringify(data),
     {
       status,
       headers: {
-        "content-type": "application/json; charset=UTF-8",
-        "cache-control": "no-store"
+        "content-type":
+          "application/json; charset=UTF-8",
+        "cache-control":
+          "no-store"
       }
     }
   );
 }
+
 
 function html(content, status = 200) {
   return new Response(
@@ -611,12 +708,15 @@ function html(content, status = 200) {
     {
       status,
       headers: {
-        "content-type": "text/html; charset=UTF-8",
-        "cache-control": "no-store"
+        "content-type":
+          "text/html; charset=UTF-8",
+        "cache-control":
+          "no-store"
       }
     }
   );
 }
+
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -627,6 +727,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+
 function slugify(text) {
   return String(text)
     .trim()
@@ -635,23 +736,31 @@ function slugify(text) {
     .replace(/^-+|-+$/g, "");
 }
 
+
 function money(value) {
-  return Number(value || 0).toLocaleString("fa-IR");
+  return Number(
+    value || 0
+  ).toLocaleString("fa-IR");
 }
 
-
-// =====================================================
-// HOME PAGE
-// =====================================================
 
 function homePage() {
   return `<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#ef394e">
-<meta name="description" content="دیجی‌ماریکسو؛ فروشگاه آنلاین و بازار خرید و فروش کالا">
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+<meta
+  name="theme-color"
+  content="#ef394e"
+>
+<meta
+  name="description"
+  content="دیجی‌ماریکسو؛ فروشگاه آنلاین و بازار خرید و فروش کالا"
+>
 <title>دیجی‌ماریکسو | DigiMarixo</title>
 
 <style>
@@ -777,7 +886,12 @@ a{
   margin:20px auto;
   padding:30px;
   border-radius:18px;
-  background:linear-gradient(135deg,#151c36,#ef394e);
+  background:
+    linear-gradient(
+      135deg,
+      #151c36,
+      #ef394e
+    );
   color:#fff;
   min-height:220px;
   display:flex;
@@ -825,7 +939,8 @@ a{
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:
+    repeat(4,1fr);
   gap:15px;
 }
 
@@ -839,7 +954,9 @@ a{
 
 .card:hover{
   transform:translateY(-2px);
-  box-shadow:0 5px 18px rgba(0,0,0,.08);
+  box-shadow:
+    0 5px 18px
+    rgba(0,0,0,.08);
 }
 
 .pic{
@@ -913,7 +1030,8 @@ a{
   display:none;
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.55);
+  background:
+    rgba(0,0,0,.55);
   z-index:100;
   padding:20px;
   overflow:auto;
@@ -938,7 +1056,8 @@ a{
 
 .product-detail{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:
+    1fr 1fr;
   gap:25px;
 }
 
@@ -1037,16 +1156,20 @@ a{
 }
 
 @media(max-width:900px){
+
   .grid{
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:
+      repeat(3,1fr);
   }
 
   .hero{
     margin:12px;
   }
+
 }
 
 @media(max-width:650px){
+
   .top-inner{
     flex-wrap:wrap;
   }
@@ -1062,7 +1185,8 @@ a{
   }
 
   .grid{
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:
+      repeat(2,1fr);
   }
 
   .hero{
@@ -1085,6 +1209,7 @@ a{
   .pic{
     height:150px;
   }
+
 }
 </style>
 </head>
@@ -1092,6 +1217,7 @@ a{
 <body>
 
 <header class="top">
+
   <div class="top-inner">
 
     <div class="logo">
@@ -1100,86 +1226,155 @@ a{
     </div>
 
     <div class="search">
-      <input id="searchInput" placeholder="جستجوی کالا، برند یا دسته‌بندی...">
-      <button onclick="searchProducts()">🔎</button>
+
+      <input
+        id="searchInput"
+        placeholder="جستجوی کالا، برند یا دسته‌بندی..."
+      >
+
+      <button
+        onclick="searchProducts()"
+      >
+        🔎
+      </button>
+
     </div>
 
-    <button class="cart-btn" onclick="openCart()">
+    <button
+      class="cart-btn"
+      onclick="openCart()"
+    >
       🛒 سبد خرید
       <span id="cartCount">0</span>
     </button>
 
   </div>
+
 </header>
 
 <nav class="nav">
-  <div class="nav-inner" id="categories">
-    <button class="cat" onclick="loadProducts()">همه کالاها</button>
+
+  <div
+    class="nav-inner"
+    id="categories"
+  >
+
+    <button
+      class="cat"
+      onclick="loadProducts()"
+    >
+      همه کالاها
+    </button>
+
   </div>
+
 </nav>
 
 <section class="hero">
+
   <div>
-    <h1>به دیجی‌ماریکسو خوش آمدید</h1>
+
+    <h1>
+      به دیجی‌ماریکسو خوش آمدید
+    </h1>
+
     <p>
       بازار آنلاین کالا؛ جستجو، مقایسه و خرید آسان.
       <br>
       DigiMarixo — Your Online Marketplace
     </p>
-    <button class="hero-btn" onclick="loadProducts()">
+
+    <button
+      class="hero-btn"
+      onclick="loadProducts()"
+    >
       مشاهده محصولات
     </button>
+
   </div>
 
-  <div class="hero-icon">🛍️</div>
+  <div class="hero-icon">
+    🛍️
+  </div>
+
 </section>
 
 <main class="container">
 
-  <h2 class="section-title">محصولات</h2>
+  <h2 class="section-title">
+    محصولات
+  </h2>
 
-  <div id="products" class="grid">
-    <div class="empty">در حال دریافت محصولات...</div>
+  <div
+    id="products"
+    class="grid"
+  >
+    <div class="empty">
+      در حال دریافت محصولات...
+    </div>
   </div>
 
 </main>
 
 <footer class="footer">
+
   <div class="footer-inner">
-    <h3>دیجی‌ماریکسو | DigiMarixo</h3>
+
+    <h3>
+      دیجی‌ماریکسو | DigiMarixo
+    </h3>
+
     <p>
       یک فروشگاه و بازار آنلاین مستقل برای خرید و فروش کالا.
     </p>
+
     <p>
       © DigiMarixo
     </p>
+
   </div>
+
 </footer>
 
 
-<!-- PRODUCT MODAL -->
-<div id="productModal" class="modal">
+<div
+  id="productModal"
+  class="modal"
+>
+
   <div class="modal-box">
 
-    <button class="close" onclick="closeModal('productModal')">
+    <button
+      class="close"
+      onclick="closeModal('productModal')"
+    >
       بستن
     </button>
 
     <div id="productDetail"></div>
 
   </div>
+
 </div>
 
 
-<!-- CART MODAL -->
-<div id="cartModal" class="modal">
+<div
+  id="cartModal"
+  class="modal"
+>
+
   <div class="modal-box">
 
-    <button class="close" onclick="closeModal('cartModal')">
+    <button
+      class="close"
+      onclick="closeModal('cartModal')"
+    >
       بستن
     </button>
 
-    <h2>سبد خرید</h2>
+    <h2>
+      سبد خرید
+    </h2>
 
     <div id="cartItems"></div>
 
@@ -1191,25 +1386,40 @@ a{
       تومان
     </h3>
 
-    <button class="primary" onclick="checkout()">
+    <button
+      class="primary"
+      onclick="checkout()"
+    >
       ادامه و ثبت سفارش
     </button>
 
   </div>
+
 </div>
 
 
-<!-- CHECKOUT MODAL -->
-<div id="checkoutModal" class="modal">
+<div
+  id="checkoutModal"
+  class="modal"
+>
+
   <div class="modal-box">
 
-    <button class="close" onclick="closeModal('checkoutModal')">
+    <button
+      class="close"
+      onclick="closeModal('checkoutModal')"
+    >
       بستن
     </button>
 
-    <h2>ثبت سفارش</h2>
+    <h2>
+      ثبت سفارش
+    </h2>
 
-    <form class="form" onsubmit="submitOrder(event)">
+    <form
+      class="form"
+      onsubmit="submitOrder(event)"
+    >
 
       <input
         id="customerName"
@@ -1230,7 +1440,10 @@ a{
         placeholder="آدرس کامل"
       ></textarea>
 
-      <button class="primary" type="submit">
+      <button
+        class="primary"
+        type="submit"
+      >
         ثبت سفارش
       </button>
 
@@ -1239,54 +1452,106 @@ a{
     <p id="checkoutMessage"></p>
 
   </div>
+
 </div>
 
 
 <script>
-var cart = JSON.parse(localStorage.getItem("digimarixo_cart") || "[]");
+
+var cart =
+  JSON.parse(
+    localStorage.getItem(
+      "digimarixo_cart"
+    ) || "[]"
+  );
+
 
 function saveCart(){
-  localStorage.setItem("digimarixo_cart", JSON.stringify(cart));
+
+  localStorage.setItem(
+    "digimarixo_cart",
+    JSON.stringify(cart)
+  );
+
   updateCartCount();
+
 }
 
+
 function updateCartCount(){
+
   var count = 0;
 
   cart.forEach(function(item){
-    count += Number(item.quantity || 0);
+
+    count +=
+      Number(
+        item.quantity || 0
+      );
+
   });
 
-  document.getElementById("cartCount").textContent = count;
+  document.getElementById(
+    "cartCount"
+  ).textContent = count;
+
 }
 
+
 function money(value){
-  return Number(value || 0).toLocaleString("fa-IR");
+
+  return Number(
+    value || 0
+  ).toLocaleString("fa-IR");
+
 }
+
 
 async function loadCategories(){
 
   try{
 
-    var response = await fetch("/api/categories");
-    var data = await response.json();
+    var response =
+      await fetch(
+        "/api/categories"
+      );
 
-    var box = document.getElementById("categories");
+    var data =
+      await response.json();
+
+    var box =
+      document.getElementById(
+        "categories"
+      );
 
     data.forEach(function(cat){
 
-      var button = document.createElement("button");
+      var button =
+        document.createElement(
+          "button"
+        );
 
-      button.className = "cat";
+      button.className =
+        "cat";
 
       button.textContent =
-        (cat.icon || "📦") + " " + cat.name;
+        (cat.icon || "📦") +
+        " " +
+        cat.name;
 
-      button.onclick = function(){
-        loadProducts("", cat.id);
-      };
+      button.onclick =
+        function(){
 
-      box.appendChild(button);
+          loadProducts(
+            "",
+            cat.id
+          );
+
+        };
+
+      box.appendChild(
+        button
+      );
 
     });
 
@@ -1295,14 +1560,25 @@ async function loadCategories(){
     console.error(error);
 
   }
+
 }
 
-async function loadProducts(query, category){
 
-  query = query || "";
-  category = category || "";
+async function loadProducts(
+  query,
+  category
+){
 
-  var box = document.getElementById("products");
+  query =
+    query || "";
+
+  category =
+    category || "";
+
+  var box =
+    document.getElementById(
+      "products"
+    );
 
   box.innerHTML =
     '<div class="empty">در حال دریافت محصولات...</div>';
@@ -1313,82 +1589,128 @@ async function loadProducts(query, category){
       "/api/products?limit=100";
 
     if(query){
-      url += "&q=" + encodeURIComponent(query);
+
+      url +=
+        "&q=" +
+        encodeURIComponent(
+          query
+        );
+
     }
 
     if(category){
-      url += "&category=" + encodeURIComponent(category);
+
+      url +=
+        "&category=" +
+        encodeURIComponent(
+          category
+        );
+
     }
 
-    var response = await fetch(url);
+    var response =
+      await fetch(url);
 
-    var products = await response.json();
+    var products =
+      await response.json();
 
-    if(!Array.isArray(products) || !products.length){
+    if(
+      !Array.isArray(products) ||
+      !products.length
+    ){
 
       box.innerHTML =
         '<div class="empty">محصولی پیدا نشد.</div>';
 
       return;
+
     }
 
     box.innerHTML = "";
 
-    products.forEach(function(product){
+    products.forEach(
+      function(product){
 
-      var card = document.createElement("div");
+        var card =
+          document.createElement(
+            "div"
+          );
 
-      card.className = "card";
+        card.className =
+          "card";
 
-      var image = product.image_url
-        ? '<img src="' +
-          escapeHtml(product.image_url) +
-          '" alt="' +
-          escapeHtml(product.name) +
-          '">'
-        : '<div class="noimg">📦</div>';
+        var image =
+          product.image_url
+            ? '<img src="' +
+              escapeHtml(
+                product.image_url
+              ) +
+              '" alt="' +
+              escapeHtml(
+                product.name
+              ) +
+              '">'
+            : '<div class="noimg">📦</div>';
 
-      var oldPrice = "";
+        var oldPrice = "";
 
-      if(
-        product.compare_price &&
-        Number(product.compare_price) > Number(product.price)
-      ){
-        oldPrice =
-          '<div class="old">' +
-          money(product.compare_price) +
-          ' تومان</div>';
+        if(
+          product.compare_price &&
+          Number(
+            product.compare_price
+          ) >
+          Number(
+            product.price
+          )
+        ){
+
+          oldPrice =
+            '<div class="old">' +
+            money(
+              product.compare_price
+            ) +
+            ' تومان</div>';
+
+        }
+
+        card.innerHTML =
+          '<div class="pic">' +
+            image +
+          '</div>' +
+
+          '<div class="card-body">' +
+
+            '<div class="card-title">' +
+              escapeHtml(
+                product.name
+              ) +
+            '</div>' +
+
+            '<div class="price">' +
+              money(
+                product.price
+              ) +
+              '<span class="toman">تومان</span>' +
+            '</div>' +
+
+            oldPrice +
+
+            '<button onclick="openProduct(' +
+              Number(
+                product.id
+              ) +
+            ')">' +
+              'مشاهده و خرید' +
+            '</button>' +
+
+          '</div>';
+
+        box.appendChild(
+          card
+        );
+
       }
-
-      card.innerHTML =
-        '<div class="pic">' +
-          image +
-        '</div>' +
-
-        '<div class="card-body">' +
-
-          '<div class="card-title">' +
-            escapeHtml(product.name) +
-          '</div>' +
-
-          '<div class="price">' +
-            money(product.price) +
-            '<span class="toman">تومان</span>' +
-          '</div>' +
-
-          oldPrice +
-
-          '<button onclick="openProduct(' +
-            Number(product.id) +
-          ')">' +
-            'مشاهده و خرید' +
-          '</button>' +
-
-        '</div>';
-
-      box.appendChild(card);
-
-    });
+    );
 
   }catch(error){
 
@@ -1398,55 +1720,88 @@ async function loadProducts(query, category){
     console.error(error);
 
   }
+
 }
+
 
 function searchProducts(){
 
   var value =
-    document.getElementById("searchInput").value.trim();
+    document.getElementById(
+      "searchInput"
+    ).value.trim();
 
-  loadProducts(value, "");
+  loadProducts(
+    value,
+    ""
+  );
 
 }
 
+
 document
-  .getElementById("searchInput")
-  .addEventListener("keydown", function(event){
+  .getElementById(
+    "searchInput"
+  )
+  .addEventListener(
+    "keydown",
+    function(event){
 
-    if(event.key === "Enter"){
-      searchProducts();
+      if(
+        event.key ===
+        "Enter"
+      ){
+
+        searchProducts();
+
+      }
+
     }
+  );
 
-  });
 
 async function openProduct(id){
 
   try{
 
     var response =
-      await fetch("/api/products/" + id);
+      await fetch(
+        "/api/products/" +
+        id
+      );
 
     var data =
       await response.json();
 
     if(!data.product){
 
-      alert("محصول پیدا نشد.");
+      alert(
+        "محصول پیدا نشد."
+      );
+
       return;
 
     }
 
-    var p = data.product;
+    var p =
+      data.product;
 
-    var image = p.image_url
-      ? '<img src="' +
-        escapeHtml(p.image_url) +
-        '" alt="' +
-        escapeHtml(p.name) +
-        '">'
-      : '<div class="noimg">📦</div>';
+    var image =
+      p.image_url
+        ? '<img src="' +
+          escapeHtml(
+            p.image_url
+          ) +
+          '" alt="' +
+          escapeHtml(
+            p.name
+          ) +
+          '">'
+        : '<div class="noimg">📦</div>';
 
-    document.getElementById("productDetail").innerHTML =
+    document.getElementById(
+      "productDetail"
+    ).innerHTML =
 
       '<div class="product-detail">' +
 
@@ -1457,25 +1812,36 @@ async function openProduct(id){
         '<div>' +
 
           '<h2>' +
-            escapeHtml(p.name) +
+            escapeHtml(
+              p.name
+            ) +
           '</h2>' +
 
           '<p>' +
-            escapeHtml(p.description || "توضیحی ثبت نشده است.") +
+            escapeHtml(
+              p.description ||
+              "توضیحی ثبت نشده است."
+            ) +
           '</p>' +
 
           '<div class="detail-price">' +
-            money(p.price) +
+            money(
+              p.price
+            ) +
             ' تومان' +
           '</div>' +
 
           '<p>موجودی: ' +
-            money(p.stock) +
+            money(
+              p.stock
+            ) +
             ' عدد</p>' +
 
           '<button class="primary" onclick="addToCart(' +
-            Number(p.id) +
-            ')">' +
+            Number(
+              p.id
+            ) +
+          ')">' +
             'افزودن به سبد خرید' +
           '</button>' +
 
@@ -1483,21 +1849,35 @@ async function openProduct(id){
 
       '</div>';
 
-    document.getElementById("productModal").style.display = "block";
+    document.getElementById(
+      "productModal"
+    ).style.display =
+      "block";
 
   }catch(error){
 
-    alert("خطا در دریافت محصول.");
+    alert(
+      "خطا در دریافت محصول."
+    );
 
   }
 
 }
 
+
 function addToCart(id){
 
-  var found = cart.find(function(item){
-    return Number(item.product_id) === Number(id);
-  });
+  var found =
+    cart.find(
+      function(item){
+
+        return Number(
+          item.product_id
+        ) ===
+        Number(id);
+
+      }
+    );
 
   if(found){
 
@@ -1506,33 +1886,47 @@ function addToCart(id){
   }else{
 
     cart.push({
-      product_id: Number(id),
-      quantity: 1
+      product_id:
+        Number(id),
+      quantity:1
     });
 
   }
 
   saveCart();
 
-  alert("محصول به سبد خرید اضافه شد.");
+  alert(
+    "محصول به سبد خرید اضافه شد."
+  );
 
-  closeModal("productModal");
+  closeModal(
+    "productModal"
+  );
 
 }
+
 
 async function openCart(){
 
   var box =
-    document.getElementById("cartItems");
+    document.getElementById(
+      "cartItems"
+    );
 
   if(!cart.length){
 
     box.innerHTML =
       '<div class="empty">سبد خرید خالی است.</div>';
 
-    document.getElementById("cartTotal").textContent = "0";
+    document.getElementById(
+      "cartTotal"
+    ).textContent =
+      "0";
 
-    document.getElementById("cartModal").style.display = "block";
+    document.getElementById(
+      "cartModal"
+    ).style.display =
+      "block";
 
     return;
 
@@ -1541,19 +1935,30 @@ async function openCart(){
   box.innerHTML =
     '<div class="empty">در حال دریافت...</div>';
 
-  document.getElementById("cartModal").style.display = "block";
+  document.getElementById(
+    "cartModal"
+  ).style.display =
+    "block";
 
   var total = 0;
   var html = "";
 
-  for(var i = 0; i < cart.length; i++){
+  for(
+    var i = 0;
+    i < cart.length;
+    i++
+  ){
 
-    var item = cart[i];
+    var item =
+      cart[i];
 
     try{
 
       var response =
-        await fetch("/api/products/" + item.product_id);
+        await fetch(
+          "/api/products/" +
+          item.product_id
+        );
 
       var data =
         await response.json();
@@ -1562,7 +1967,8 @@ async function openCart(){
         continue;
       }
 
-      var p = data.product;
+      var p =
+        data.product;
 
       var line =
         Number(p.price) *
@@ -1575,12 +1981,17 @@ async function openCart(){
         '<div class="cart-row">' +
 
           '<div>' +
+
             '<strong>' +
-              escapeHtml(p.name) +
+              escapeHtml(
+                p.name
+              ) +
             '</strong>' +
 
             '<div>' +
-              money(p.price) +
+              money(
+                p.price
+              ) +
               ' تومان' +
             '</div>' +
 
@@ -1593,7 +2004,9 @@ async function openCart(){
               ',-1)">−</button>' +
 
             '<span>' +
-              Number(item.quantity) +
+              Number(
+                item.quantity
+              ) +
             '</span>' +
 
             '<button class="small-btn" onclick="changeQuantity(' +
@@ -1620,28 +2033,54 @@ async function openCart(){
     html ||
     '<div class="empty">سبد خرید خالی است.</div>';
 
-  document.getElementById("cartTotal").textContent =
+  document.getElementById(
+    "cartTotal"
+  ).textContent =
     money(total);
 
 }
 
-function changeQuantity(id, amount){
 
-  var item = cart.find(function(x){
-    return Number(x.product_id) === Number(id);
-  });
+function changeQuantity(
+  id,
+  amount
+){
+
+  var item =
+    cart.find(
+      function(x){
+
+        return Number(
+          x.product_id
+        ) ===
+        Number(id);
+
+      }
+    );
 
   if(!item){
     return;
   }
 
-  item.quantity += amount;
+  item.quantity +=
+    amount;
 
-  if(item.quantity <= 0){
+  if(
+    item.quantity <=
+    0
+  ){
 
-    cart = cart.filter(function(x){
-      return Number(x.product_id) !== Number(id);
-    });
+    cart =
+      cart.filter(
+        function(x){
+
+          return Number(
+            x.product_id
+          ) !==
+          Number(id);
+
+        }
+      );
 
   }
 
@@ -1651,40 +2090,62 @@ function changeQuantity(id, amount){
 
 }
 
+
 function removeFromCart(id){
 
-  cart = cart.filter(function(item){
-    return Number(item.product_id) !== Number(id);
-  });
+  cart =
+    cart.filter(
+      function(item){
+
+        return Number(
+          item.product_id
+        ) !==
+        Number(id);
+
+      }
+    );
 
   saveCart();
 
   openCart();
 
 }
+
 
 function checkout(){
 
   if(!cart.length){
 
-    alert("سبد خرید خالی است.");
+    alert(
+      "سبد خرید خالی است."
+    );
 
     return;
 
   }
 
-  closeModal("cartModal");
+  closeModal(
+    "cartModal"
+  );
 
-  document.getElementById("checkoutModal").style.display = "block";
+  document.getElementById(
+    "checkoutModal"
+  ).style.display =
+    "block";
 
 }
 
-async function submitOrder(event){
+
+async function submitOrder(
+  event
+){
 
   event.preventDefault();
 
   var message =
-    document.getElementById("checkoutMessage");
+    document.getElementById(
+      "checkoutMessage"
+    );
 
   message.textContent =
     "در حال ثبت سفارش...";
@@ -1692,42 +2153,62 @@ async function submitOrder(event){
   var payload = {
 
     customer_name:
-      document.getElementById("customerName").value.trim(),
+      document.getElementById(
+        "customerName"
+      ).value.trim(),
 
     phone:
-      document.getElementById("phone").value.trim(),
+      document.getElementById(
+        "phone"
+      ).value.trim(),
 
     address:
-      document.getElementById("address").value.trim(),
+      document.getElementById(
+        "address"
+      ).value.trim(),
 
     items:
-      cart.map(function(item){
+      cart.map(
+        function(item){
 
-        return {
-          product_id: Number(item.product_id),
-          quantity: Number(item.quantity)
-        };
+          return {
+            product_id:
+              Number(
+                item.product_id
+              ),
+            quantity:
+              Number(
+                item.quantity
+              )
+          };
 
-      })
+        }
+      )
 
   };
 
   try{
 
-    var response = await fetch(
-      "/api/orders",
-      {
-        method: "POST",
+    var response =
+      await fetch(
+        "/api/orders",
+        {
+          method:"POST",
 
-        headers: {
-          "content-type": "application/json"
-        },
+          headers:{
+            "content-type":
+              "application/json"
+          },
 
-        body: JSON.stringify(payload)
-      }
-    );
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
 
-    var data = await response.json();
+    var data =
+      await response.json();
 
     if(!response.ok){
 
@@ -1748,7 +2229,9 @@ async function submitOrder(event){
       "<br>شماره سفارش: " +
       data.order_id +
       "<br>مبلغ: " +
-      money(data.total_amount) +
+      money(
+        data.total_amount
+      ) +
       " تومان" +
       "<br><br>" +
       "درگاه پرداخت در مرحله بعد به فروشگاه متصل می‌شود.";
@@ -1764,32 +2247,64 @@ async function submitOrder(event){
 
 }
 
+
 function closeModal(id){
 
-  document.getElementById(id).style.display = "none";
+  document.getElementById(
+    id
+  ).style.display =
+    "none";
 
 }
+
 
 function escapeHtml(value){
 
-  return String(value || "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+  return String(
+    value || ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
 
-window.addEventListener("click", function(event){
 
-  if(event.target.classList.contains("modal")){
+window.addEventListener(
+  "click",
+  function(event){
 
-    event.target.style.display = "none";
+    if(
+      event.target.classList.contains(
+        "modal"
+      )
+    ){
+
+      event.target.style.display =
+        "none";
+
+    }
 
   }
+);
 
-});
 
 loadCategories();
 loadProducts();
@@ -1802,24 +2317,33 @@ updateCartCount();
 }
 
 
-// =====================================================
-// ADMIN PAGE
-// =====================================================
-
 function adminPage() {
   return `<!doctype html>
 <html lang="fa" dir="rtl">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>مدیریت دیجی‌ماریکسو</title>
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<title>
+  مدیریت دیجی‌ماریکسو
+</title>
 
 <style>
+
 body{
   margin:0;
   background:#f5f5f5;
   color:#222;
-  font-family:Tahoma,Arial,sans-serif;
+  font-family:
+    Tahoma,
+    Arial,
+    sans-serif;
 }
 
 .container{
@@ -1874,7 +2398,8 @@ button{
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
+  grid-template-columns:
+    repeat(2,1fr);
   gap:20px;
 }
 
@@ -1897,6 +2422,7 @@ td{
 }
 
 @media(max-width:700px){
+
   .grid{
     grid-template-columns:1fr;
   }
@@ -1904,8 +2430,11 @@ td{
   table{
     font-size:12px;
   }
+
 }
+
 </style>
+
 </head>
 
 <body>
@@ -1913,13 +2442,23 @@ td{
 <div class="container">
 
   <div class="header">
-    <h1>پنل مدیریت دیجی‌ماریکسو</h1>
-    <p>DigiMarixo Admin Panel</p>
+
+    <h1>
+      پنل مدیریت دیجی‌ماریکسو
+    </h1>
+
+    <p>
+      DigiMarixo Admin Panel
+    </p>
+
   </div>
+
 
   <div class="box">
 
-    <h2>ورود مدیریت</h2>
+    <h2>
+      ورود مدیریت
+    </h2>
 
     <input
       id="adminPassword"
@@ -1927,21 +2466,31 @@ td{
       placeholder="ADMIN_PASSWORD"
     >
 
-    <button onclick="login()">
+    <button
+      onclick="login()"
+    >
       ورود
     </button>
 
-    <span id="loginMessage"></span>
+    <span
+      id="loginMessage"
+    ></span>
 
   </div>
 
-  <div id="dashboard" style="display:none">
+
+  <div
+    id="dashboard"
+    style="display:none"
+  >
 
     <div class="grid">
 
       <div class="box">
 
-        <h2>افزودن محصول</h2>
+        <h2>
+          افزودن محصول
+        </h2>
 
         <input
           id="name"
@@ -1984,19 +2533,28 @@ td{
           value="1"
         >
 
-        <button onclick="createProduct()">
+        <button
+          onclick="createProduct()"
+        >
           افزودن محصول
         </button>
 
-        <p id="productMessage"></p>
+        <p
+          id="productMessage"
+        ></p>
 
       </div>
 
+
       <div class="box">
 
-        <h2>وضعیت سیستم</h2>
+        <h2>
+          وضعیت سیستم
+        </h2>
 
-        <button onclick="loadProducts()">
+        <button
+          onclick="loadProducts()"
+        >
           دریافت محصولات
         </button>
 
@@ -2007,15 +2565,20 @@ td{
           دریافت سفارش‌ها
         </button>
 
-        <p id="systemMessage"></p>
+        <p
+          id="systemMessage"
+        ></p>
 
       </div>
 
     </div>
 
+
     <div class="box">
 
-      <h2>محصولات</h2>
+      <h2>
+        محصولات
+      </h2>
 
       <div id="products">
         در حال دریافت...
@@ -2023,9 +2586,12 @@ td{
 
     </div>
 
+
     <div class="box">
 
-      <h2>سفارش‌ها</h2>
+      <h2>
+        سفارش‌ها
+      </h2>
 
       <div id="orders">
         هنوز دریافت نشده است.
@@ -2037,49 +2603,73 @@ td{
 
 </div>
 
+
 <script>
+
 var token = "";
+
 
 function login(){
 
   token =
-    document.getElementById("adminPassword").value;
+    document.getElementById(
+      "adminPassword"
+    ).value;
 
   if(!token){
 
-    document.getElementById("loginMessage").textContent =
+    document.getElementById(
+      "loginMessage"
+    ).textContent =
       "رمز را وارد کنید.";
 
     return;
 
   }
 
-  document.getElementById("dashboard").style.display =
+  document.getElementById(
+    "dashboard"
+  ).style.display =
     "block";
 
-  document.getElementById("loginMessage").textContent =
+  document.getElementById(
+    "loginMessage"
+  ).textContent =
     "ورود انجام شد.";
 
   loadProducts();
 
 }
 
-async function api(url, options){
 
-  options = options || {};
+async function api(
+  url,
+  options
+){
 
-  options.headers = options.headers || {};
+  options =
+    options || {};
+
+  options.headers =
+    options.headers || {};
 
   options.headers.Authorization =
     "Bearer " + token;
 
   if(options.body){
-    options.headers["content-type"] =
+
+    options.headers[
+      "content-type"
+    ] =
       "application/json";
+
   }
 
   var response =
-    await fetch(url, options);
+    await fetch(
+      url,
+      options
+    );
 
   var data =
     await response.json();
@@ -2087,7 +2677,8 @@ async function api(url, options){
   if(!response.ok){
 
     throw new Error(
-      data.error || "خطا"
+      data.error ||
+      "خطا"
     );
 
   }
@@ -2096,43 +2687,71 @@ async function api(url, options){
 
 }
 
+
 async function createProduct(){
 
   try{
 
-    var data = await api(
-      "/api/products",
-      {
-        method:"POST",
+    var data =
+      await api(
+        "/api/products",
+        {
+          method:"POST",
 
-        body:JSON.stringify({
+          body:
+            JSON.stringify({
 
-          name:
-            document.getElementById("name").value,
+              name:
+                document.getElementById(
+                  "name"
+                ).value,
 
-          description:
-            document.getElementById("description").value,
+              description:
+                document.getElementById(
+                  "description"
+                ).value,
 
-          price:
-            Number(document.getElementById("price").value),
+              price:
+                Number(
+                  document.getElementById(
+                    "price"
+                  ).value
+                ),
 
-          compare_price:
-            Number(document.getElementById("compare_price").value),
+              compare_price:
+                Number(
+                  document.getElementById(
+                    "compare_price"
+                  ).value
+                ),
 
-          image_url:
-            document.getElementById("image_url").value,
+              image_url:
+                document.getElementById(
+                  "image_url"
+                ).value,
 
-          stock:
-            Number(document.getElementById("stock").value),
+              stock:
+                Number(
+                  document.getElementById(
+                    "stock"
+                  ).value
+                ),
 
-          category_id:
-            Number(document.getElementById("category_id").value)
+              category_id:
+                Number(
+                  document.getElementById(
+                    "category_id"
+                  ).value
+                )
 
-        })
-      }
-    );
+            })
 
-    document.getElementById("productMessage").textContent =
+        }
+      );
+
+    document.getElementById(
+      "productMessage"
+    ).textContent =
       "محصول با موفقیت اضافه شد. شناسه: " +
       data.id;
 
@@ -2140,22 +2759,29 @@ async function createProduct(){
 
   }catch(error){
 
-    document.getElementById("productMessage").textContent =
+    document.getElementById(
+      "productMessage"
+    ).textContent =
       error.message;
 
   }
 
 }
 
+
 async function loadProducts(){
 
   try{
 
     var products =
-      await api("/api/products?limit=100");
+      await api(
+        "/api/products?limit=100"
+      );
 
     var box =
-      document.getElementById("products");
+      document.getElementById(
+        "products"
+      );
 
     if(!products.length){
 
@@ -2175,53 +2801,70 @@ async function loadProducts(){
       "<th>موجودی</th>" +
       "</tr>";
 
-    products.forEach(function(p){
+    products.forEach(
+      function(p){
 
-      html +=
-        "<tr>" +
+        html +=
+          "<tr>" +
 
-        "<td>" +
-          p.id +
-        "</td>" +
+          "<td>" +
+            p.id +
+          "</td>" +
 
-        "<td>" +
-          escapeHtml(p.name) +
-        "</td>" +
+          "<td>" +
+            escapeHtml(
+              p.name
+            ) +
+          "</td>" +
 
-        "<td>" +
-          Number(p.price).toLocaleString("fa-IR") +
-        "</td>" +
+          "<td>" +
+            Number(
+              p.price
+            ).toLocaleString(
+              "fa-IR"
+            ) +
+          "</td>" +
 
-        "<td>" +
-          p.stock +
-        "</td>" +
+          "<td>" +
+            p.stock +
+          "</td>" +
 
-        "</tr>";
+          "</tr>";
 
-    });
+      }
+    );
 
-    html += "</table>";
+    html +=
+      "</table>";
 
-    box.innerHTML = html;
+    box.innerHTML =
+      html;
 
   }catch(error){
 
-    document.getElementById("products").textContent =
+    document.getElementById(
+      "products"
+    ).textContent =
       error.message;
 
   }
 
 }
 
+
 async function loadOrders(){
 
   try{
 
     var orders =
-      await api("/api/orders");
+      await api(
+        "/api/orders"
+      );
 
     var box =
-      document.getElementById("orders");
+      document.getElementById(
+        "orders"
+      );
 
     if(!orders.length){
 
@@ -2242,115 +2885,190 @@ async function loadOrders(){
         "<th>وضعیت</th>" +
       "</tr>";
 
-    orders.forEach(function(order){
+    orders.forEach(
+      function(order){
 
-      html +=
-        "<tr>" +
+        html +=
+          "<tr>" +
 
-        "<td>" +
-          order.id +
-        "</td>" +
+          "<td>" +
+            order.id +
+          "</td>" +
 
-        "<td>" +
-          escapeHtml(order.customer_name) +
-          "<br>" +
-          escapeHtml(order.phone) +
-        "</td>" +
+          "<td>" +
+            escapeHtml(
+              order.customer_name
+            ) +
+            "<br>" +
+            escapeHtml(
+              order.phone
+            ) +
+          "</td>" +
 
-        "<td>" +
-          Number(order.total_amount)
-            .toLocaleString("fa-IR") +
-          " تومان" +
-        "</td>" +
+          "<td>" +
+            Number(
+              order.total_amount
+            ).toLocaleString(
+              "fa-IR"
+            ) +
+            " تومان" +
+          "</td>" +
 
-        "<td>" +
+          "<td>" +
 
-          "<select onchange='changeOrderStatus(" +
-            Number(order.id) +
-            ", this.value)'>" +
+            "<select onchange='changeOrderStatus(" +
+              Number(
+                order.id
+              ) +
+              ", this.value)'>" +
 
-            "<option value='pending' " +
-              (order.status === "pending" ? "selected" : "") +
-            ">در انتظار</option>" +
+              "<option value='pending' " +
+                (
+                  order.status ===
+                  "pending"
+                    ? "selected"
+                    : ""
+                ) +
+              ">در انتظار</option>" +
 
-            "<option value='confirmed' " +
-              (order.status === "confirmed" ? "selected" : "") +
-            ">تأیید شده</option>" +
+              "<option value='confirmed' " +
+                (
+                  order.status ===
+                  "confirmed"
+                    ? "selected"
+                    : ""
+                ) +
+              ">تأیید شده</option>" +
 
-            "<option value='processing' " +
-              (order.status === "processing" ? "selected" : "") +
-            ">در حال پردازش</option>" +
+              "<option value='processing' " +
+                (
+                  order.status ===
+                  "processing"
+                    ? "selected"
+                    : ""
+                ) +
+              ">در حال پردازش</option>" +
 
-            "<option value='shipped' " +
-              (order.status === "shipped" ? "selected" : "") +
-            ">ارسال شده</option>" +
+              "<option value='shipped' " +
+                (
+                  order.status ===
+                  "shipped"
+                    ? "selected"
+                    : ""
+                ) +
+              ">ارسال شده</option>" +
 
-            "<option value='delivered' " +
-              (order.status === "delivered" ? "selected" : "") +
-            ">تحویل شده</option>" +
+              "<option value='delivered' " +
+                (
+                  order.status ===
+                  "delivered"
+                    ? "selected"
+                    : ""
+                ) +
+              ">تحویل شده</option>" +
 
-            "<option value='cancelled' " +
-              (order.status === "cancelled" ? "selected" : "") +
-            ">لغو شده</option>" +
+              "<option value='cancelled' " +
+                (
+                  order.status ===
+                  "cancelled"
+                    ? "selected"
+                    : ""
+                ) +
+              ">لغو شده</option>" +
 
-          "</select>" +
+            "</select>" +
 
-        "</td>" +
+          "</td>" +
 
-        "</tr>";
+          "</tr>";
 
-    });
+      }
+    );
 
-    html += "</table>";
+    html +=
+      "</table>";
 
-    box.innerHTML = html;
+    box.innerHTML =
+      html;
 
   }catch(error){
 
-    document.getElementById("orders").textContent =
+    document.getElementById(
+      "orders"
+    ).textContent =
       error.message;
 
   }
 
 }
 
-async function changeOrderStatus(id, status){
+
+async function changeOrderStatus(
+  id,
+  status
+){
 
   try{
 
     await api(
-      "/api/orders/" + id,
+      "/api/orders/" +
+      id,
       {
         method:"PUT",
 
-        body:JSON.stringify({
-          status:status
-        })
+        body:
+          JSON.stringify({
+            status:
+              status
+          })
       }
     );
 
-    alert("وضعیت سفارش تغییر کرد.");
+    alert(
+      "وضعیت سفارش تغییر کرد."
+    );
 
   }catch(error){
 
-    alert(error.message);
+    alert(
+      error.message
+    );
 
   }
 
 }
 
+
 function escapeHtml(value){
 
-  return String(value || "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+  return String(
+    value || ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
+
 </script>
 
 </body>
 </html>`;
-}
+            }
